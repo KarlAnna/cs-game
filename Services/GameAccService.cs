@@ -16,6 +16,7 @@ namespace Classes.Services
   public class GameAccountService : IGameAccountService
   {
     private readonly IGameAccountRepository _gameAccountRepository;
+
     public GameAccountService(IGameAccountRepository gameAccountRepository)
     {
       _gameAccountRepository = gameAccountRepository;
@@ -23,7 +24,12 @@ namespace Classes.Services
 
     public GameAccountBase CreateAccount(GameAccountType gameAccountType, string userName, decimal currentRating)
     {
-      return _gameAccountRepository.CreateGameAccount(gameAccountType, userName, currentRating);
+      var createdGameAccount = _gameAccountRepository.CreateGameAccount(gameAccountType, userName, currentRating);
+
+      Console.WriteLine(
+        $"\n{Symbols.CheckMark}  The game account was successfully created\n{createdGameAccount.AccountId}: {createdGameAccount.UserName}, Rating: {createdGameAccount.CurrentRating} (min rating)\n");
+
+      return createdGameAccount;
     }
 
     public GameAccountBase GetAccountById(decimal accountId)
