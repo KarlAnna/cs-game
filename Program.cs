@@ -1,36 +1,56 @@
-﻿using Classes;
+﻿using Classes.Utils;
+using Classes.Repositories;
+using Classes.Services;
 
-class Program
+namespace Classes
 {
-  static void Main()
+  class Program
   {
-    Run();
-  }
+    static void Main()
+    {
+      Run();
+    }
+    static void Run()
+    {
+      var dbContext = new DbContext();
+      var gameAccRepo = new GameAccountRepository(dbContext);
+      var gameRepo = new GameRepository(dbContext);
 
-  static void Run()
-  {
-    GameAccountBase player1 = new StandardGameAccount("Player 1", Constants.MinRating);
-    GameAccountBase player2 = new StandardGameAccount("Player 2", Constants.MinRating);
+      var gameService = new GameService(gameRepo);
+      var gameAccService = new GameAccountService(gameAccRepo);
 
-    GameFactory gameFactory = new GameFactory();
+      var player1 = gameAccService.CreateAccount(GameAccountType.Standard, "Player 1", GameConstants.MinRating);
+      var player2 = gameAccService.CreateAccount(GameAccountType.WinStreak, "Player 2", GameConstants.MinRating);
+      var player3 = gameAccService.CreateAccount(GameAccountType.DoublePoints, "Player 3", GameConstants.MinRating);
+      var player4 = gameAccService.CreateAccount(GameAccountType.Standard, "Player 4", GameConstants.MinRating);
 
-    player1.WinGame(gameFactory.CreateGame(GameType.Standard, player2.UserName, GameResult.Win));
-    player2.LoseGame(gameFactory.CreateGame(GameType.Standard, player1.UserName, GameResult.Loss));
+      player1.WinGame(gameService.CreateGame(GameType.Standard, player2.UserName, GameResult.Win));
+      player2.LoseGame(gameService.CreateGame(GameType.Standard, player1.UserName, GameResult.Loss));
 
-    player1.WinGame(gameFactory.CreateGame(GameType.DoublePoints, player2.UserName, GameResult.Win));
-    player2.LoseGame(gameFactory.CreateGame(GameType.DoublePoints, player1.UserName, GameResult.Loss));
+      player2.WinGame(gameService.CreateGame(GameType.Training, GameConstants.TrainingGameOpponentName, GameResult.Win));
 
-    player2.WinGame(gameFactory.CreateGame(GameType.Training, player1.UserName, GameResult.Win));
-    player1.LoseGame(gameFactory.CreateGame(GameType.Training, player2.UserName, GameResult.Loss));
+      player1.WinGame(gameService.CreateGame(GameType.DoublePoints, player3.UserName, GameResult.Win));
+      player3.LoseGame(gameService.CreateGame(GameType.DoublePoints, player1.UserName, GameResult.Loss));
 
-    player1.WinGame(gameFactory.CreateGame(GameType.DoublePoints, player2.UserName, GameResult.Win));
-    player2.LoseGame(gameFactory.CreateGame(GameType.DoublePoints, player1.UserName, GameResult.Loss));
+      player2.WinGame(gameService.CreateGame(GameType.Standard, player4.UserName, GameResult.Win));
+      player4.LoseGame(gameService.CreateGame(GameType.Standard, player2.UserName, GameResult.Loss));
 
-    Console.WriteLine($"\nStats of {player1.UserName} in the {player1.GetAccountType()}:");
 
-    Console.WriteLine(player1.GetStats());
+      Console.WriteLine("List of all accounts:");
+      foreach (var gameAccount in gameAccService.GetAllAccounts())
+        Console.WriteLine($"{gameAccount.AccountId}: {gameAccount.UserName}, Rating: {gameAccount.CurrentRating}");
 
-    Console.WriteLine($"Stats of {player2.UserName} in the {player2.GetAccountType()}:");
-    Console.WriteLine(player2.GetStats());
+      Console.WriteLine("\nList of all games:");
+      foreach (var game in gameService.GetAllGames())
+        Console.WriteLine($"{game.OpponentName}, Result: {game.Result}, Rating: {game.CalculateRating()}");
+
+      Console.WriteLine(
+        $"\nStats of {player1.UserName} in the {player1.GetAccountType()}:");
+      Console.WriteLine(gameAccService.GetAccountById(player1.AccountId).GetStats());
+
+      Console.WriteLine(
+        $"\nStats of {player2.UserName} in the {player1.GetAccountType()}:");
+      Console.WriteLine(gameAccService.GetAccountById(player2.AccountId).GetStats());
+    }
   }
 }
