@@ -1,56 +1,75 @@
 ﻿using Classes.Utils;
 using Classes.Repositories;
 using Classes.Services;
+using Classes.UI;
 
 namespace Classes
 {
   class Program
   {
+
     static void Main()
     {
       Run();
     }
-    static void Run()
+
+    static void AddMockData(GameAccountService gameAccService, GameService gameService)
     {
-      var dbContext = new DbContext();
-      var gameAccRepo = new GameAccountRepository(dbContext);
-      var gameRepo = new GameRepository(dbContext);
-
-      var gameService = new GameService(gameRepo);
-      var gameAccService = new GameAccountService(gameAccRepo);
-
       var player1 = gameAccService.CreateAccount(GameAccountType.Standard, "Player 1", GameConstants.MinRating);
       var player2 = gameAccService.CreateAccount(GameAccountType.WinStreak, "Player 2", GameConstants.MinRating);
-      var player3 = gameAccService.CreateAccount(GameAccountType.DoublePoints, "Player 3", GameConstants.MinRating);
-      var player4 = gameAccService.CreateAccount(GameAccountType.Standard, "Player 4", GameConstants.MinRating);
 
       player1.WinGame(gameService.CreateGame(GameType.Standard, player2.UserName, GameResult.Win));
       player2.LoseGame(gameService.CreateGame(GameType.Standard, player1.UserName, GameResult.Loss));
 
       player2.WinGame(gameService.CreateGame(GameType.Training, GameConstants.TrainingGameOpponentName, GameResult.Win));
+    }
 
-      player1.WinGame(gameService.CreateGame(GameType.DoublePoints, player3.UserName, GameResult.Win));
-      player3.LoseGame(gameService.CreateGame(GameType.DoublePoints, player1.UserName, GameResult.Loss));
+    static void Run()
+    {
+      var dbContext = new DbContext();
+      var gameAccountRepository = new GameAccountRepository(dbContext);
+      var gameRepository = new GameRepository(dbContext);
 
-      player2.WinGame(gameService.CreateGame(GameType.Standard, player4.UserName, GameResult.Win));
-      player4.LoseGame(gameService.CreateGame(GameType.Standard, player2.UserName, GameResult.Loss));
+      var gameService = new GameService(gameRepository);
+      var gameAccService = new GameAccountService(gameAccountRepository);
+
+      var GameUI = new GameUI(gameService, gameAccService);
+      var GameAccUI = new GameAccountsUI(gameAccService);
 
 
-      Console.WriteLine("List of all accounts:");
-      foreach (var gameAccount in gameAccService.GetAllAccounts())
-        Console.WriteLine($"{gameAccount.AccountId}: {gameAccount.UserName}, Rating: {gameAccount.CurrentRating}");
+      AddMockData(gameAccService, gameService);
 
-      Console.WriteLine("\nList of all games:");
-      foreach (var game in gameService.GetAllGames())
-        Console.WriteLine($"{game.OpponentName}, Result: {game.Result}, Rating: {game.CalculateRating()}");
+      Console.WriteLine("\n\nWelcome!");
 
-      Console.WriteLine(
-        $"\nStats of {player1.UserName} in the {player1.GetAccountType()}:");
-      Console.WriteLine(gameAccService.GetAccountById(player1.AccountId).GetStats());
+      Dictionary<int, (string commandInfo, Action command)> uiCommands = new Dictionary<int, (string, Action)>
+      {
+        { 1, ("Create a game account", GameAccUI.CreateGameAccount) },
+        { 2, ("Let's play!", GameUI.CreateGame) },
+        { 3, ("Print the list of players", GameAccUI.ShowAllGameAccounts) },
+        { 4, ("Print the list of games", GameUI.ShowAllGames) },
+        { 5, ("Exit", () => Environment.Exit(0)) }
+      };
 
-      Console.WriteLine(
-        $"\nStats of {player2.UserName} in the {player1.GetAccountType()}:");
-      Console.WriteLine(gameAccService.GetAccountById(player2.AccountId).GetStats());
+      while (true)
+      {
+        Console.WriteLine("\n-----------------");
+
+        foreach (var (optionToPrint, (commandInfo, _)) in uiCommands)
+          Console.WriteLine($"{optionToPrint}. {commandInfo}");
+
+        Console.Write("\nChoose an option: ");
+
+        var choice = Console.ReadLine();
+
+        if (int.TryParse(choice, out var optionToChoose) && uiCommands.ContainsKey(optionToChoose))
+        {
+          uiCommands[optionToChoose].command();
+        }
+        else
+        {
+          Console.WriteLine("\nThis option does not exist. Try another one.");
+        }
+      }
     }
   }
 }

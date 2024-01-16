@@ -19,11 +19,14 @@ namespace Classes.Services
 
     public GameService(IGameRepository gameRepository)
     {
-      this._gameRepository = gameRepository;
+      _gameRepository = gameRepository;
     }
 
     public GameBase CreateGame(GameType gameType, string opponentName, GameResult result)
     {
+      Console.WriteLine(
+        $"\n{Symbols.CheckMark} The {gameType} game has been played with the {result} result against {opponentName} ");
+
       return _gameRepository.CreateGame(gameType, opponentName, result);
     }
 
